@@ -48,16 +48,31 @@ conda activate STAX
   pytorch==2.1.2+cu118 and dgl==2.2.1+cu118:
 
 ```
+Conda:
 For torch
 conda install pytorch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 For dgl in linux
 conda install -c dglteam/label/th22_cu118 dgl
 For dgl in windows
 conda install -c dglteam/label/cu118 dgl
+
+Pip:
+For torch
+pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
+For dgl in linux
+pip install  dgl -f https://data.dgl.ai/wheels/torch-2.2/cu118/repo.html
+For dgl in windows
+pip install  dgl -f https://data.dgl.ai/wheels/cu118/repo.html
 ```
 
-The other versions of pytorch and dgl can be found from
+The official command and other versions of pytorch and dgl can be found from
 [torch](https://pytorch.org/) and [dgl](https://www.dgl.ai/pages/start.html).
+
+In addition, we need scanpy package.
+```
+pip install scanpy==1.10.3
+```
+Scanpy can be found [scanpy](https://scanpy.readthedocs.io/en/stable/)
 
 ## Installation
 
@@ -70,6 +85,9 @@ python setup.py bdist_wheel sdist
 cd dist
 pip install STAX-0.0.1.tar.gz
 ```
+
+If you have existed python environment, you can directly download the STAX package and try to import STAX in your code.
+It may work, but we can't guarantee it
 
 ## Tutorials
 
