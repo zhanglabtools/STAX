@@ -1,0 +1,11 @@
+.git/
+.idea/
+.ipynb_checkpoints/
+.log/
+.rar
+.Rproj.user
+
+scniche/
+analysis/
+dataset/
+
