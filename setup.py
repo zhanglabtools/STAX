@@ -23,6 +23,7 @@ REQUIRED = [
     'PyYAML>=6.0.2, <=6.0.2',
     'rpy2>=3.5.1, <=3.5.1',
     'ipykernel>=6.29.5, <=6.29.5',
+    'ipython>=8.27.0, <=8.27.0',
 ]
 setup(name='STAX',
       author='Zhen-Hao Guo',
