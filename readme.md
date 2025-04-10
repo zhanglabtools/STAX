@@ -44,39 +44,33 @@ conda create -n STAX python==3.11
 conda activate STAX
 ```
 
-* You need to choose the appropriate dependency pytorch and dgl for your own environment, and we recommend the following
+* You need to choose the appropriate dependency pytorch and dgl for your own environment, and we recommend the 
   pytorch==2.1.2+cu118 and dgl==2.2.1+cu118:
 
 ```
-Conda:
-For torch
-conda install pytorch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 pytorch-cuda=11.8 -c pytorch -c nvidia
-For dgl in linux
-conda install -c dglteam/label/th22_cu118 dgl
-For dgl in windows
-conda install -c dglteam/label/cu118 dgl
-
-Pip:
-For torch
+For torch in windows:
+pip:
 pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
-For dgl in linux
-pip install  dgl -f https://data.dgl.ai/wheels/torch-2.2/cu118/repo.html
+or conda:
+conda install pytorch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 pytorch-cuda=11.8 -c pytorch -c nvidia
+You can find the install command for other environment at https://pytorch.org/get-started/previous-versions/
+
 For dgl in windows
-pip install  dgl -f https://data.dgl.ai/wheels/cu118/repo.html
+The official install command can be found at https://www.dgl.ai/pages/start.html, but we can not install dgl by it.
+In another way, we use the whl file to install dgl. We can find these files at https://data.dgl.ai/wheels/repo.html.
+Which whl file you choose depends on your current environment. For cuda11.8 and python3.11 in windows, select 
+dgl-2.2.1+cu118-cp311-cp311-win_amd64.whl. We also uploaded this file to 
+https://drive.google.com/drive/folders/18tcl-PRdK9j-W59GUPdsKgy_04IJvz05
+Once the whl file is downloaded, 'cd' to the directory and pip install it. 
+For example, pip install dgl-2.2.1+cu118-cp311-cp311-win_amd64.whl
 ```
 
 The official command and other versions of pytorch and dgl can be found from
 [torch](https://pytorch.org/) and [dgl](https://www.dgl.ai/pages/start.html).
 
-In addition, we need scanpy package.
-```
-pip install scanpy==1.10.3
-```
-Scanpy can be found [scanpy](https://scanpy.readthedocs.io/en/stable/)
-
 ## Installation
 
-You can install STAX as follows:
+Then you can install STAX as follows:
 
 ```
 git clone https://github.com/zhanglabtools/STAX.git
@@ -88,6 +82,20 @@ pip install STAX-0.0.1.tar.gz
 
 If you have existed python environment, you can directly download the STAX package and try to import STAX in your code.
 It may work, but we can't guarantee it
+
+## Setting your jupyter lab
+
+Once you have configured your STAX environment using conda. Add STAX to jupyter's core. 
+
+Specifically, we have installed ipykernel automatically through STAX, if it does not install successfully, 
+please enter the following command.
+```
+pip install ipykernel
+```
+Then enter the following command:
+```
+python -m ipykernel install --user --name=STAX --display-name STAX
+```
 
 ## Tutorials
 

@@ -1,13 +1,28 @@
 from setuptools import setup, find_packages
 
 REQUIRED = [
+    'scanpy>=1.10.3, <=1.10.3',
     'scanpy[leiden]>=1.10.3, <=1.10.3',
+    'louvain>=0.8.2, <=0.8.2',
+    'squidpy>=1.6.1, <=1.6.1',
+    'anndata>=0.10.9, <=0.10.9',
+    'POT>=0.9.4, <=0.9.4',
+    'opencv-python>=4.10.0.84, <=4.10.0.84',
+    'dask>=2024.9.1, <=2024.9.1',
     'numpy>=1.26.3, <=1.26.3',
     'numba>=0.60.0, <=0.60.0',
     'pandas>=2.2.3, <=2.2.3',
     'scipy>=1.14.1, <=1.14.1',
     'torchdata>=0.7.1, <=0.7.1',
     'pyyaml>=6.0.2, <=6.0.2',
+    'idna>=3.4, <=3.4',
+    'plotly>=5.14.1, <=5.14.1',
+    'pydantic>=2.9.2, <=2.9.2',
+    'adjustText>=1.3.0, <=1.3.0',
+    'charset-normalizer>=2.1.1, <=2.1.1',
+    'PyYAML>=6.0.2, <=6.0.2',
+    'rpy2>=3.5.1, <=3.5.1',
+    'ipykernel>=6.29.5, <=6.29.5',
 ]
 setup(name='STAX',
       author='Zhen-Hao Guo',
