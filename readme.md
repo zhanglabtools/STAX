@@ -30,7 +30,7 @@ The URL is: https://drive.google.com/drive/folders/18tcl-PRdK9j-W59GUPdsKgy_04IJ
 
 ### Environment
 
-#### Declaration: All of our experiments were implemented in Windows 10 and python311 environment. We also provide a linux ubuntu 22.04 installation pipeline, but the linux results are not exactly consistent with the Windows 10 results. One variation of result can be seen in Epigenomics mouse_brain_dataset_1 in tutorial1. This may be due to differences in numpy's underlying math libraries or compilers used across the two systems.
+#### Declaration: All of our experiments were implemented in Windows 10 and python 3.11 environment. We also provide a linux ubuntu 22.04 installation pipeline, but the linux results are not exactly consistent with the Windows 10 results. One variation of result can be seen in Epigenomics mouse_brain_dataset_1 in tutorial1. This may be due to differences in numpy's underlying math libraries or compilers used across the two systems.
 
 It is recommended to use a Python version  `3.11`.
 
