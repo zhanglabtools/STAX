@@ -129,9 +129,10 @@ def tfidf(X):
 
 
 def lsi(
-        adata=20,
+        adata=None,
         n_components=50,
-        use_highly_variable=None
+        use_highly_variable=None,
+        random_state=42,
 ):
     r"""
     LSI analysis (following the Seurat v3 approach)
@@ -140,13 +141,11 @@ def lsi(
         use_highly_variable = "highly_variable" in adata.var
     adata_use = adata[:, adata.var["highly_variable"]] if use_highly_variable else adata
     X = tfidf(adata_use.X)
-    # X = adata_use.X
     X_norm = sklearn.preprocessing.Normalizer(norm="l1").fit_transform(X)
-    X_norm = np.log1p(X_norm * 1e4)
-    X_lsi = sklearn.utils.extmath.randomized_svd(X_norm, n_components)[0]
+    X_norm = np.log1p(X_norm * 1e4)  # TODO difference in win10 and linux ubuntu 22.04
+    X_lsi = sklearn.utils.extmath.randomized_svd(X_norm, n_components, random_state=random_state)[0]
     X_lsi -= X_lsi.mean(axis=1, keepdims=True)
     X_lsi /= X_lsi.std(axis=1, ddof=1, keepdims=True)
-    # adata.obsm["X_lsi"] = X_lsi
     adata.obsm["X_lsi"] = X_lsi[:, 1:]
 
 
