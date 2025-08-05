@@ -14,6 +14,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from anndata import AnnData
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.neighbors import NearestNeighbors
 
 
 def minmax_scale(adata):
@@ -394,6 +395,113 @@ def make_fake_spot(adata, spatial_key='spatial', x_density=50, y_density=50, z_s
     return adata_new
 
 
+def make_fake_spot_v2(adata, spatial_key='spatial', step=None, max_neigh=10):
+    from sklearn.neighbors import KDTree
+    adata.obs_names_make_unique()
+    adata.var_names_make_unique()
+    if 'spot_quality' not in adata.obs.columns:
+        adata.obs.loc[:, 'spot_quality'] = 'real'
+    # if spatial_key in ['spatial', 'spatial_2d']:
+    if adata.obsm[spatial_key].shape[1] == 2:
+        X_min, X_max = adata.obsm[spatial_key][:, 0].min(), adata.obsm[spatial_key][:, 0].max()
+        Y_min, Y_max = adata.obsm[spatial_key][:, 1].min(), adata.obsm[spatial_key][:, 1].max()
+        X = np.round(np.arange(X_min - step, X_max + step, step), 5)
+        Y = np.round(np.arange(Y_min - step, Y_max + step, step), 5)
+        locations = np.array([[x, y] for y in Y for x in X]).astype(np.float32)
+        adata_fake = sc.AnnData(np.zeros([len(locations), len(adata.var)]), var=adata.var)
+        adata_fake.obsm[spatial_key] = locations
+        adata_fake.obs.loc[:, 'spot_quality'] = 'fake'
+        adata_fake.obs.loc[:, 'Region'] = 'fake'
+        # 2，选择部分点作为可用点
+        # 构建KDTree
+        tree = KDTree(adata_fake.obsm[spatial_key])
+        distances, indices = tree.query(adata.obsm[spatial_key], k=max_neigh)
+    # elif spatial_key == 'spatial_3d':
+    elif adata.obsm[spatial_key].shape[1] == 3:
+        # 1，产生一定密度的点
+        X_min, X_max = adata.obsm[spatial_key][:, 0].min(), adata.obsm[spatial_key][:, 0].max()
+        Y_min, Y_max = adata.obsm[spatial_key][:, 1].min(), adata.obsm[spatial_key][:, 1].max()
+        Z_min, Z_max = adata.obsm[spatial_key][:, 2].min(), adata.obsm[spatial_key][:, 2].max()
+        X = np.round(np.arange(X_min - step, X_max + step, step), 5)
+        Y = np.round(np.arange(Y_min - step, Y_max + step, step), 5)
+        Z = np.round(np.arange(Z_min - step, Z_max + step, step), 5)
+        X = X[1: -1]  # discard the first and the last slice
+        Y = Y[1: -1]  # discard the first and the last slice
+        Z = Z[1: -1]  # discard the first and the last slice
+        locations = np.array([[x, y, z] for z in Z for y in Y for x in X]).astype(np.float32)
+        # adata_fake = sc.AnnData(np.zeros([len(locations), len(adata.var)]), var=adata.var)
+        adata_fake = sc.AnnData(csr_matrix((len(locations), len(adata.var))), var=adata.var)
+        adata_fake.obsm[spatial_key] = locations
+        adata_fake.obs.loc[:, 'spot_quality'] = 'fake'
+        adata_fake.obs.loc[:, 'Region'] = 'fake'
+        # 2，选择部分点作为可用点
+        # 构建KDTree
+        tree = KDTree(adata_fake.obsm[spatial_key])
+        distances, indices = tree.query(adata.obsm[spatial_key], k=max_neigh)
+    else:
+        print('correct dimension of spatial coordinates')
+        raise NotImplementedError
+    new_indices = np.unique(indices.reshape(-1, 1).squeeze())
+    adata_fake_sub = adata_fake[new_indices, :]
+    adata_new = sc.concat([adata, adata_fake_sub], join='outer')
+    if adata_new.obsm[spatial_key].shape[1] == 3:
+        adata_new.obs.loc[:, 'slices'] = adata_new.obsm[spatial_key][:, 2].astype(str)
+    return adata_new
+
+
+def remove_close_nodes_knn(coords, threshold):
+    coords = np.array(coords)
+    nbrs = NearestNeighbors(n_neighbors=2, metric='euclidean').fit(coords)
+    distances, indices = nbrs.kneighbors(coords)
+    mask = np.ones(len(coords), dtype=bool)
+    for i in range(len(coords)):
+        if mask[i]:
+            neighbor_idx = indices[i][1]
+            if distances[i][1] < threshold:
+                mask[neighbor_idx] = False
+
+    return coords[mask]
+
+
+def make_fake_spot_visium(adata, cutoff=None, metric='euclidean', model='Radius', spatial_key='spatial', verbose=True):
+    from sklearn.neighbors import KDTree
+    adata.obs_names_make_unique()
+    adata.var_names_make_unique()
+    if 'spot_quality' not in adata.obs.columns:
+        adata.obs.loc[:, 'spot_quality'] = 'real'
+    # if spatial_key in ['spatial', 'spatial_2d']:
+    if adata.obsm[spatial_key].shape[1] == 2:
+        cal_spatial_net(adata, cutoff=cutoff, metric=metric, model=model, spatial_key=spatial_key, verbose=verbose)
+        adj_coo = adata.uns['adj'].tocoo()
+        edge_array = np.column_stack((adj_coo.row, adj_coo.col))
+        coordinates = adata.obsm[spatial_key]
+        location_fake = 0.5 * (coordinates[edge_array[:, 0]] + coordinates[edge_array[:, 1]])
+        location_fake = np.unique(location_fake, axis=0)
+        location_fake = remove_close_nodes_knn(location_fake, threshold=1)
+        # remove real in fake
+        # location_real = adata.obsm[spatial_key]
+        # mask = ~np.any(np.all(location_fake[:, None] == location_real, axis=2), axis=1)
+        # location_fake = location_fake[mask]
+        adata_fake = sc.AnnData(np.zeros([len(location_fake), len(adata.var)]), var=adata.var)
+        adata_fake.obsm[spatial_key] = location_fake
+        adata_fake.obs.loc[:, 'spot_quality'] = 'fake'
+        # adata_fake.obs.loc[:, 'Region'] = 'fake'
+        # 2，move overlap, TODO in the future
+    # elif spatial_key == 'spatial_3d':
+    elif adata.obsm[spatial_key].shape[1] == 3:
+        print('TODO in the future')
+        raise NotImplementedError
+    else:
+        print('correct dimension of spatial coordinates')
+        raise NotImplementedError
+    adata_fake_sub = adata_fake
+    adata_new = sc.concat([adata, adata_fake_sub], join='outer')
+    if adata_new.obsm[spatial_key].shape[1] == 3:
+        adata_new.obs.loc[:, 'slices'] = adata_new.obsm[spatial_key][:, 2].astype(str)
+    del adata.uns['adj']
+    return adata_new
+
+
 def cell_type_onehot_encoding(adata, cell_type_key='cell_type'):
     categories = adata.obs.loc[:, cell_type_key].to_numpy()
     encoder = OneHotEncoder()
@@ -403,6 +511,45 @@ def cell_type_onehot_encoding(adata, cell_type_key='cell_type'):
     adata_new = sc.AnnData(one_hot_matrix, obs=adata.obs, obsm=adata.obsm)
     adata_new.var.index = one_hot_columns
     return adata_new
+
+
+def define_plane_from_three_points(p1, p2, p3):
+    v1 = p3 - p1
+    v2 = p2 - p1
+    print('v1, v2: ', v1, v2)
+    normal = np.cross(v1, v2)
+    normal = normal / np.linalg.norm(normal)
+    print('normal: ', normal)
+    d = -np.dot(normal, p1)
+    return normal, d
+
+
+def slice_point_cloud(points, plane_normal, plane_d, thickness=0.1):
+    distances = (points @ plane_normal + plane_d) / np.linalg.norm(plane_normal)
+    mask = np.abs(distances) <= thickness/2
+    sliced_points = points[mask]
+    distances_sliced = distances[mask]
+    indices = np.where(mask)[0]
+    return sliced_points, distances_sliced, indices
+
+
+def adata_slicedby_points(adata, key_points, spatial_key='spatial', thickness=0.2):
+    cloud_points = adata.obsm[spatial_key]
+    plane_normal, plane_d = define_plane_from_three_points(key_points[0], key_points[1], key_points[2])
+    sliced_points, distances, indices = slice_point_cloud(cloud_points, plane_normal, plane_d, thickness=thickness)
+    print(f"Plane Equation: {plane_normal[0]:.2f}x + {plane_normal[1]:.2f}y + {plane_normal[2]:.2f}z + {plane_d:.2f} = 0")
+    print(f"All points: {len(cloud_points)} Sub points: {len(sliced_points)} ")
+    return adata[indices, :].copy()
+
+
+def compute_global_avg_knn_distance(adata, spatial_key='spatial', k=2):
+    nbrs = NearestNeighbors(n_neighbors=k + 1, algorithm='auto').fit(adata.obsm[spatial_key])  # k+1因为包含自己
+    distances, indices = nbrs.kneighbors(adata.obsm[spatial_key])
+    individual_avgs = np.mean(distances[:, 1:], axis=1)  # 从第二列开始，因为第一列是自己
+    global_avg = np.mean(individual_avgs)
+
+    return global_avg, individual_avgs
+
 
 # def permutation(feature):
 #     # fix_seed(FLAGS.random_seed)

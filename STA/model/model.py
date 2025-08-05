@@ -65,7 +65,8 @@ class Model(nn.Module):
             self.train()
 
         if out == 'latent':
-            output = np.zeros((size, self.h_dim))
+            output = np.zeros((size, self.h_dim), dtype=np.float16)
+            # output = np.memmap('temp_latent.dat', dtype='float32', mode='w+', shape=(size, self.h_dim))
             for i, (input_nodes, output_nodes, block) in enumerate(dataloader):
                 block = block.to(device)
                 x, y, idx = block.ndata['feature'], block.ndata['batch'], block.ndata['index']
@@ -76,7 +77,8 @@ class Model(nn.Module):
                     condition = torch.isin(idx, output_nodes.to(device))
                     output[output_nodes.detach().cpu().numpy()] = z[condition].detach().cpu().numpy()
         elif out == 'impute':
-            output = np.zeros((size, self.input_dim))
+            output = np.zeros((size, self.input_dim), dtype=np.float16)
+            # output = np.memmap('temp_latent.dat', dtype='float32', mode='w+', shape=(size, self.h_dim))
             for i, (input_nodes, output_nodes, block) in enumerate(dataloader):
                 block = block.to(device)
                 x, y, idx = block.ndata['feature'], block.ndata['batch'], block.ndata['index']

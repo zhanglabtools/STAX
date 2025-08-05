@@ -3,14 +3,15 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
+import seaborn as sns
+
 from adjustText import adjust_text
 from matplotlib.patches import Rectangle
 from matplotlib import rcParams
 from PIL import Image
 from matplotlib.figure import Figure
-import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
-
+from anndata import AnnData
 rcParams['font.family'] = 'Arial'
 
 
@@ -282,7 +283,9 @@ def plot_cell_gene(adata,
             cell_coordinate = umap_coordinates[cell_index]
             arrow_end = (cell_coordinate[0] + arrow_direction[0] * arrow_length,
                          cell_coordinate[1] + arrow_direction[1] * arrow_length)
-            text = plt.text(arrow_end[0], arrow_end[1], gene_id, fontsize=fontsize, fontname=fontname,
+            # text = plt.text(arrow_end[0], arrow_end[1], gene_id, fontsize=fontsize, fontname=fontname,
+            #                 color=color, ha='center', va='center')
+            text = plt.text(arrow_end[0], arrow_end[1], f"$\it{{{gene_id}}}$", fontsize=fontsize, fontname=fontname,
                             color=color, ha='center', va='center')
             texts.append(text)
             coordinates.append((cell_coordinate, arrow_end))
@@ -295,8 +298,7 @@ def plot_cell_gene(adata,
             text_position = text.get_position()
             if draw_arrow:
                 arrow = plt.arrow(cell_coordinate[0] + 0.05, cell_coordinate[1] + 0.05, 0., 0., width=0.0,
-                                  head_width=0.2,
-                                  head_length=0.15, fc=color, ec=color, shape=shape)
+                                  head_width=0.2, head_length=0.15, fc=color, ec=color, shape=shape)
                 arrows.append(arrow)
             else:
                 plt.plot([cell_coordinate[0], text_position[0]], [cell_coordinate[1], text_position[1]],
@@ -448,6 +450,10 @@ def plot3d_plotly(adata,
                   point_size=0.2,
                   opacity=0.7,
                   figure_size=(1200, 1000),
+                  visible=True,
+                  showticklabels=True,
+                  titlefont=24,
+                  tickfont=12,
                   ):
     """
     slow rather than k3d，but can move perspective
@@ -459,6 +465,10 @@ def plot3d_plotly(adata,
     :param point_size: the size of point
     :param opacity: the opacity of point
     :param figure_size: the size of figure
+    :param visible: visible
+    :param showticklabels: showticklabels
+    :param titlefont: titlefont
+    :param tickfont: tickfont
     :return:
     """
     import plotly.graph_objs as go
@@ -470,12 +480,25 @@ def plot3d_plotly(adata,
     locations = adata.obsm[spatial_key]
 
     if marker in adata.var.index:
+        point_indices = adata.obs.index.tolist()
         expression = adata[:, marker].X.toarray().reshape(-1)
+        meta = np.stack([point_indices, expression], axis=1)
         fig = go.Figure(data=[go.Scatter3d(
             x=locations[:, 0],
             y=locations[:, 1],
             z=locations[:, 2],
             mode='markers',
+            customdata=meta,
+            hovertemplate=(
+                    "<b>Cell Index: </b><br>%{customdata[0]}</b><br>" +
+                    "<b>Expression: </b><br>%{customdata[1]:.3f}</b><br>" +
+                    # "<b>Expression:</b><br>%{customdata}</b><br>" +
+                    "<b>Coordinates:</b><br>" +
+                    "x: %{x:.3f}<br>" +
+                    "y: %{y:.3f}<br>" +
+                    "z: %{z:.3f}<br>" +
+                    "<extra></extra>"  # <-- 确认这一行存在
+            ),
             marker=dict(  # 对标记的设置
                 size=point_size,
                 color=expression,  # 颜色设置
@@ -489,7 +512,29 @@ def plot3d_plotly(adata,
         #     yaxis=dict(range=[locations[:, 1].min(), locations[:, 1].max()]),  # y轴范围从0到20
         #     zaxis=dict(range=[locations[:, 2].min(), locations[:, 2].max()]),  # z轴范围从0到20
         # )
-        fig.update_layout(width=figure_size[0], height=figure_size[1])
+        # fig.update_layout(
+        #     scene=dict(
+        #         xaxis=dict(showticklabels=False),
+        #         yaxis=dict(showticklabels=False),
+        #         zaxis=dict(showticklabels=False)
+        #     )
+        # )
+        fig.update_layout(width=figure_size[0],
+                          height=figure_size[1],
+                          scene=dict(
+                              xaxis=dict(showticklabels=showticklabels,
+                                         visible=visible,
+                                         titlefont=dict(family="Arial", size=titlefont),
+                                         tickfont=dict(family="Arial", size=tickfont)),
+                              yaxis=dict(showticklabels=showticklabels,
+                                         visible=visible,
+                                         titlefont=dict(family="Arial", size=titlefont),
+                                         tickfont=dict(family="Arial", size=tickfont)),
+                              zaxis=dict(showticklabels=showticklabels,
+                                         visible=visible,
+                                         titlefont=dict(family="Arial", size=titlefont),
+                                         tickfont=dict(family="Arial", size=tickfont))
+                          ))
         fig.show()
 
     elif marker in adata.obs.columns:
@@ -508,10 +553,24 @@ def plot3d_plotly(adata,
             color_rgb = [hex_to_rgb(color) for color in colors]
 
         # 创建3D散点图
+        point_indices = adata.obs.index.tolist()
+        domains = adata.obs.loc[:, marker].to_numpy()
+        meta = np.stack([point_indices, domains], axis=1)
+        # meta = point_indices
         trace = go.Scatter3d(
             x=locations[:, 0],
             y=locations[:, 1],
             z=locations[:, 2],
+            customdata=meta,
+            hovertemplate=(
+                        "<b>Cell Index: </b><br>%{customdata[0]}</b><br>" +
+                        "<b>Domains: </b><br>%{customdata[1]}</b><br>" +
+                        "<b>Coordinates:</b><br>" +
+                        "x: %{x:.3f}<br>" +
+                        "y: %{y:.3f}<br>" +
+                        "z: %{z:.3f}<br>" +
+                        "<extra></extra>"  # <-- 确认这一行存在
+                            ),
             opacity=opacity,
             mode='markers',
             marker=dict(
@@ -520,12 +579,67 @@ def plot3d_plotly(adata,
             )
         )
         fig = go.Figure(data=[trace])
-        fig.update_layout(width=figure_size[0], height=figure_size[1])
+        fig.update_layout(width=figure_size[0],
+                          height=figure_size[1],
+                          scene=dict(
+                              xaxis=dict(showticklabels=showticklabels,
+                                         visible=visible,
+                                         titlefont=dict(family="Arial", size=titlefont),
+                                         tickfont=dict(family="Arial", size=tickfont)),
+                              yaxis=dict(showticklabels=showticklabels,
+                                         visible=visible,
+                                         titlefont=dict(family="Arial", size=titlefont),
+                                         tickfont=dict(family="Arial", size=tickfont)),
+                              zaxis=dict(showticklabels=showticklabels,
+                                         visible=visible,
+                                         titlefont=dict(family="Arial", size=titlefont),
+                                         tickfont=dict(family="Arial", size=tickfont))
+                          ))
         fig.show()
 
     else:
         print('marker not in adata.var or adata.obs')
         raise ValueError
+
+
+def slice_adata_3d(adata: AnnData,
+                   plane_point: np.ndarray,
+                   plane_normal: np.ndarray,
+                   spatial_key='spatial',
+                   slice_thickness=0.5) -> AnnData:
+    """
+    slice from AnnData。
+
+    Args:
+        adata (AnnData):
+        plane_point (np.ndarray): one point
+        plane_normal (np.ndarray): normal vector
+        spatial_key (float): spatial_key
+        slice_thickness (float): slice_thickness
+
+    Returns:
+        AnnData: sliced anndata
+
+    Raises:
+        ValueError
+    """
+    if spatial_key not in adata.obsm:
+        raise ValueError(f"adata.obsm['{spatial_key}'] not exist")
+
+    spatial_coords = adata.obsm[spatial_key]
+
+    if spatial_coords.shape[1] != 3:
+        raise ValueError(f"The shape of adata.obsm['spatial'] is not correct")
+
+    normal_normalized = plane_normal / np.linalg.norm(plane_normal)
+    distances = np.dot(spatial_coords - plane_point, normal_normalized)
+    mask = (distances >= -slice_thickness / 2) & (distances <= slice_thickness / 2)
+    sliced_adata = adata[mask].copy()
+    if sliced_adata.n_obs == 0:
+        print("The size of sliced_adata is 0")
+
+    return sliced_adata
+
 
 # TODO
 # def plot_cell_gene(adata,
