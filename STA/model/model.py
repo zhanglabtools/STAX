@@ -65,7 +65,7 @@ class Model(nn.Module):
             self.train()
 
         if out == 'latent':
-            output = np.zeros((size, self.h_dim), dtype=np.float16)
+            output = np.zeros((size, self.h_dim), dtype=np.float64)
             # output = np.memmap('temp_latent.dat', dtype='float32', mode='w+', shape=(size, self.h_dim))
             for i, (input_nodes, output_nodes, block) in enumerate(dataloader):
                 block = block.to(device)
@@ -76,8 +76,11 @@ class Model(nn.Module):
                 else:
                     condition = torch.isin(idx, output_nodes.to(device))
                     output[output_nodes.detach().cpu().numpy()] = z[condition].detach().cpu().numpy()
-        elif out == 'impute':
-            output = np.zeros((size, self.input_dim), dtype=np.float16)
+        elif out == 'impute':  # TODO, no random minibatch or just np.float16
+            if size > 1e5:
+                output = np.zeros((size, self.input_dim), dtype=np.float16)
+            else:
+                output = np.zeros((size, self.input_dim), dtype=np.float64)
             # output = np.memmap('temp_latent.dat', dtype='float32', mode='w+', shape=(size, self.h_dim))
             for i, (input_nodes, output_nodes, block) in enumerate(dataloader):
                 block = block.to(device)

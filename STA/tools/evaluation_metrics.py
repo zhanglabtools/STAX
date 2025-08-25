@@ -1,6 +1,5 @@
 import scanpy as sc
 import pandas as pd
-import squidpy as sq
 import numpy as np
 
 from scipy.spatial import distance_matrix
@@ -60,6 +59,7 @@ def _compute_PAS(clusterlabel, location):
 
 
 def marker_score(adata, domain_key, top_n=5):
+    import squidpy as sq
     adata = adata.copy()
     count_dict = adata.obs[domain_key].value_counts()
     adata = adata[adata.obs[domain_key].isin(count_dict.keys()[count_dict > 3].values)]

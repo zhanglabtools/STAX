@@ -5,7 +5,7 @@ import copy
 import torch
 import scanpy as sc
 import scipy.sparse as sp
-import cv2
+# import cv2
 import scipy
 import sklearn
 from typing import Any
@@ -150,90 +150,90 @@ def lsi(
     adata.obsm["X_lsi"] = X_lsi[:, 1:]
 
 
-class SubImageDataset(torch.utils.data.Dataset):
-    def __init__(self,
-                 adata,
-                 adata_name=None,
-                 image_use='hires',
-                 coordinate_key='spatial',
-                 row_width=20,
-                 col_width=20,
-                 ):
-        if image_use not in ['hires', 'lowres']:
-            print("resolution should be 'hires' or 'lowres'")
-            raise TypeError
-        if adata_name is None:
-            print("adata_name should not be None")
-            raise TypeError
-        self.adata = adata
-        self.image = adata.uns['spatial'][adata_name]['images'][image_use]
-        self.scalefactors = adata.uns['spatial'][adata_name]['scalefactors'][f'tissue_{image_use}_scalef']
-        self.coordinate = adata.obsm[coordinate_key]
-        self.row_width = row_width
-        self.col_width = col_width
+# class SubImageDataset(torch.utils.data.Dataset):
+#     def __init__(self,
+#                  adata,
+#                  adata_name=None,
+#                  image_use='hires',
+#                  coordinate_key='spatial',
+#                  row_width=20,
+#                  col_width=20,
+#                  ):
+#         if image_use not in ['hires', 'lowres']:
+#             print("resolution should be 'hires' or 'lowres'")
+#             raise TypeError
+#         if adata_name is None:
+#             print("adata_name should not be None")
+#             raise TypeError
+#         self.adata = adata
+#         self.image = adata.uns['spatial'][adata_name]['images'][image_use]
+#         self.scalefactors = adata.uns['spatial'][adata_name]['scalefactors'][f'tissue_{image_use}_scalef']
+#         self.coordinate = adata.obsm[coordinate_key]
+#         self.row_width = row_width
+#         self.col_width = col_width
+#
+#     def __getitem__(self, idx):
+#         # adata.obsm['spatial'][:, 0] is the col and adata.obsm['spatial'][:, 1] is row
+#         row, col = int(self.coordinate[idx][1] * self.scalefactors), \
+#                    int(self.coordinate[idx][0] * self.scalefactors)
+#         sub_image = self.image[(row - self.row_width):(row + self.row_width),
+#                     (col - self.col_width):(col + self.col_width)]
+#         if row != 112 or col != 112:
+#             resized_image = cv2.resize(sub_image, (224, 224))
+#         else:
+#             resized_image = sub_image
+#         # resized_image = sub_image if row == 112 and col == 112 else cv2.resize(sub_image, (224, 224))  # TODO
+#         return resized_image, torch.tensor(resized_image).permute(2, 0, 1).float(), idx
+#
+#     def __len__(self):
+#         return len(self.adata)
 
-    def __getitem__(self, idx):
-        # adata.obsm['spatial'][:, 0] is the col and adata.obsm['spatial'][:, 1] is row
-        row, col = int(self.coordinate[idx][1] * self.scalefactors), \
-                   int(self.coordinate[idx][0] * self.scalefactors)
-        sub_image = self.image[(row - self.row_width):(row + self.row_width),
-                    (col - self.col_width):(col + self.col_width)]
-        if row != 112 or col != 112:
-            resized_image = cv2.resize(sub_image, (224, 224))
-        else:
-            resized_image = sub_image
-        # resized_image = sub_image if row == 112 and col == 112 else cv2.resize(sub_image, (224, 224))  # TODO
-        return resized_image, torch.tensor(resized_image).permute(2, 0, 1).float(), idx
 
-    def __len__(self):
-        return len(self.adata)
-
-
-def generate_image_embedding(adata,
-                             adata_name,
-                             image_use='hires',
-                             coordinate_key='spatial',
-                             row_width=112,
-                             col_width=112,
-                             batch_size=1,
-                             device='cpu',
-                             pca_components=50,
-                             ):
-    import timm
-    from tqdm import tqdm
-    from sklearn.decomposition import PCA
-
-    dataset = SubImageDataset(adata, adata_name=adata_name, image_use=image_use, coordinate_key=coordinate_key,
-                              row_width=row_width, col_width=col_width)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-
-    model = timm.create_model(
-        "vit_large_patch16_224", img_size=224, patch_size=16, init_values=1e-5, num_classes=0, dynamic_img_size=True
-    )
-    print('load vit model')
-    model.load_state_dict(torch.load('./model_UNI/pytorch_model.bin', map_location="cpu"), strict=True)
-    model.eval()
-    device = device
-    model.to(device)
-    output = []
-    print('start infer')
-    with torch.inference_mode():
-        for sub_image, inputs, idx in tqdm(dataloader, desc="Inference"):
-            inputs = inputs.to(device)
-            hidden = model(inputs)
-            output.append(hidden.detach().cpu().numpy())
-    model.to('cpu')
-    torch.cuda.empty_cache()
-    del model
-    output = np.concatenate(output, axis=0)
-    # PCA
-    n_components = pca_components
-    pca = PCA(n_components=n_components)
-    reduced_output = pca.fit_transform(output)
-    adata.obsm['image_embedding'] = output
-    adata.obsm['image_embedding_PCA'] = reduced_output
-
-    return adata
+# def generate_image_embedding(adata,
+#                              adata_name,
+#                              image_use='hires',
+#                              coordinate_key='spatial',
+#                              row_width=112,
+#                              col_width=112,
+#                              batch_size=1,
+#                              device='cpu',
+#                              pca_components=50,
+#                              ):
+#     import timm
+#     from tqdm import tqdm
+#     from sklearn.decomposition import PCA
+#
+#     dataset = SubImageDataset(adata, adata_name=adata_name, image_use=image_use, coordinate_key=coordinate_key,
+#                               row_width=row_width, col_width=col_width)
+#     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+#
+#     model = timm.create_model(
+#         "vit_large_patch16_224", img_size=224, patch_size=16, init_values=1e-5, num_classes=0, dynamic_img_size=True
+#     )
+#     print('load vit model')
+#     model.load_state_dict(torch.load('./model_UNI/pytorch_model.bin', map_location="cpu"), strict=True)
+#     model.eval()
+#     device = device
+#     model.to(device)
+#     output = []
+#     print('start infer')
+#     with torch.inference_mode():
+#         for sub_image, inputs, idx in tqdm(dataloader, desc="Inference"):
+#             inputs = inputs.to(device)
+#             hidden = model(inputs)
+#             output.append(hidden.detach().cpu().numpy())
+#     model.to('cpu')
+#     torch.cuda.empty_cache()
+#     del model
+#     output = np.concatenate(output, axis=0)
+#     # PCA
+#     n_components = pca_components
+#     pca = PCA(n_components=n_components)
+#     reduced_output = pca.fit_transform(output)
+#     adata.obsm['image_embedding'] = output
+#     adata.obsm['image_embedding_PCA'] = reduced_output
+#
+#     return adata
 
 
 def cal_spatial_net(adata: AnnData,

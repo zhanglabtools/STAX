@@ -261,3 +261,44 @@ def calculate_feature_differences(feature_matrix, label_matrix):
         p_value_matrix[category] = corrected_p_values
 
     return p_value_matrix, lfc_matrix
+
+
+def label_transfer(ref, query, rep='X_STAX', label='cell_type', n_neighbors=10, threshold=0.5):
+    """
+    Inputs:
+    ref
+        reference containing the projected representations and labels
+    query
+        query containing the projected representations
+    rep
+        keys of the embeddings in adata.obsm
+    labels
+        label name in adata.obs
+
+    Return:
+    transferred label: np.array
+
+    Examples:
+        adata_query.obs['celltype_transfer']=label_transfer(adata_ref, adata_query, rep='latent', label='celltype')
+
+    """
+
+    from sklearn.neighbors import KNeighborsClassifier
+    import numpy as np
+
+    X_train = ref.obsm[rep]
+    y_train = ref.obs.loc[:, label].to_numpy()
+    X_test = query.obsm[rep]
+
+    knn = KNeighborsClassifier(n_neighbors=n_neighbors).fit(X_train, y_train)
+    y_pred = knn.predict(X_test)
+    y_prob = knn.predict_proba(X_test)
+
+    if threshold == 0:
+        return y_pred, y_prob
+    else:
+        max_probs = np.max(y_prob, axis=1)
+        unknown_indices = np.where(max_probs <= threshold)
+        y_pred = y_pred.astype('object')
+        y_pred[unknown_indices] = 'unknown'
+        return y_pred, y_prob
