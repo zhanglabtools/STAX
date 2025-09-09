@@ -1,5 +1,4 @@
 .git/
-.Github_Tutorials/
 .idea/
 .ipynb_checkpoints/
 .log/
@@ -10,3 +9,5 @@ scniche/
 analysis/
 dataset/
 
+Github_Tutorials/
+Github_Tutorials2/

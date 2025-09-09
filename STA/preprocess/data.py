@@ -359,13 +359,13 @@ def make_fake_spot(adata, spatial_key='spatial', x_density=50, y_density=50, z_s
         adata_fake.obsm[spatial_key] = locations
         adata_fake.obs.loc[:, 'spot_quality'] = 'fake'
         adata_fake.obs.loc[:, 'Region'] = 'fake'
-        # 2，选择部分点作为可用点
-        # 构建KDTree
+        # 2，select spot
+        # KDTree
         tree = KDTree(adata_fake.obsm[spatial_key])
         distances, indices = tree.query(adata.obsm[spatial_key], k=max_neigh)
     # elif spatial_key == 'spatial_3d':
     elif adata.obsm[spatial_key].shape[1] == 3:
-        # 1，产生一定密度的点
+        # 1，generate spot
         X_min, X_max = adata.obsm[spatial_key][:, 0].min(), adata.obsm[spatial_key][:, 0].max()
         Y_min, Y_max = adata.obsm[spatial_key][:, 1].min(), adata.obsm[spatial_key][:, 1].max()
         X = np.round(np.linspace(X_min, X_max, x_density), 5)
@@ -380,8 +380,8 @@ def make_fake_spot(adata, spatial_key='spatial', x_density=50, y_density=50, z_s
         adata_fake.obsm[spatial_key] = locations
         adata_fake.obs.loc[:, 'spot_quality'] = 'fake'
         adata_fake.obs.loc[:, 'Region'] = 'fake'
-        # 2，选择部分点作为可用点
-        # 构建KDTree
+        # 2，select spot
+        # KDTree
         tree = KDTree(adata_fake.obsm[spatial_key])
         distances, indices = tree.query(adata.obsm[spatial_key], k=max_neigh)
     else:
@@ -412,13 +412,13 @@ def make_fake_spot_v2(adata, spatial_key='spatial', step=None, max_neigh=10):
         adata_fake.obsm[spatial_key] = locations
         adata_fake.obs.loc[:, 'spot_quality'] = 'fake'
         adata_fake.obs.loc[:, 'Region'] = 'fake'
-        # 2，选择部分点作为可用点
-        # 构建KDTree
+        # 2，select spot
+        # KDTree
         tree = KDTree(adata_fake.obsm[spatial_key])
         distances, indices = tree.query(adata.obsm[spatial_key], k=max_neigh)
     # elif spatial_key == 'spatial_3d':
     elif adata.obsm[spatial_key].shape[1] == 3:
-        # 1，产生一定密度的点
+        # 1，generate spot
         X_min, X_max = adata.obsm[spatial_key][:, 0].min(), adata.obsm[spatial_key][:, 0].max()
         Y_min, Y_max = adata.obsm[spatial_key][:, 1].min(), adata.obsm[spatial_key][:, 1].max()
         Z_min, Z_max = adata.obsm[spatial_key][:, 2].min(), adata.obsm[spatial_key][:, 2].max()
@@ -434,8 +434,8 @@ def make_fake_spot_v2(adata, spatial_key='spatial', step=None, max_neigh=10):
         adata_fake.obsm[spatial_key] = locations
         adata_fake.obs.loc[:, 'spot_quality'] = 'fake'
         adata_fake.obs.loc[:, 'Region'] = 'fake'
-        # 2，选择部分点作为可用点
-        # 构建KDTree
+        # 2，select spot
+        # KDTree
         tree = KDTree(adata_fake.obsm[spatial_key])
         distances, indices = tree.query(adata.obsm[spatial_key], k=max_neigh)
     else:

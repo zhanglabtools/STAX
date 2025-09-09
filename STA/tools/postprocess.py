@@ -209,15 +209,6 @@ def gene_feature_transform(adata, cell_type_label='cell_type_sub', domain_label=
 
 def calculate_feature_differences(feature_matrix, label_matrix):
     """
-    计算每个类别相对于其他类别的 Mann-Whitney U检验 p值和 log fold change。
-
-    参数:
-        feature_matrix (pd.DataFrame): 形状为 (n, m) 的特征矩阵，n 是样本个数，m 是特征个数。
-        label_matrix (pd.Series): 形状为 (n,) 的标签矩阵，n 是样本个数。
-
-    返回:
-        p_value_matrix (pd.DataFrame): 形状为 (m, k) 的 p值矩阵，k 是类别个数。
-        lfc_matrix (pd.DataFrame): 形状为 (m, k) 的 log fold change 矩阵，k 是类别个数。
     """
     # 获取特征名称和类别
     feature_names = feature_matrix.columns
